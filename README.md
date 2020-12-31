@@ -2,7 +2,7 @@
 
 - Install Python 3.9 
 
-https://www.python.org/ftp/python/3.8.7/python-3.8.7-embed-amd64.zip
+[Download](https://www.python.org/ftp/python/3.8.7/python-3.8.7-embed-amd64.zip)
 
 - Extract code in a folder and run install_pre.bat which will install libraries for the code
 
