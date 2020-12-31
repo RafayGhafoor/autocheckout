@@ -1,12 +1,19 @@
 {
   "email": "chrisorzy99@gmail.com",
+  "firstName": "Chris",
+  "lastName": "Orzano",
   "first_name": "Chris",
   "last_name": " Orzano",
   "company": "xyz",
+  "organizationName": "xyz",
   "address": "3360 Montezuma Ave",
+  "addressLine1": "3360 Montezuma Ave",
   "city": "Alhambra",
+  "locality": "Alhambra",
   "country": "United States",
   "province": "California",
   "zip": "91803",
-  "phone": "740-309-3469"
+  "postalCode": "91803",
+  "phone": "740-309-3469",
+  "phoneNumber":"740-309-3469"
 }

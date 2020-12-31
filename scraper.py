@@ -18,7 +18,7 @@ options.add_argument("--disable-logging")
 driver = webdriver.Chrome(
     ChromeDriverManager().install(), options=options, service_log_path="NUL"
 )
-driver.set_page_load_timeout(10)
+driver.set_page_load_timeout(60)
 
 
 with open("info.json", "r") as f:
@@ -147,7 +147,7 @@ def get_urls(filename="products.txt"):
 
 def click_checkout(driver, url):
     driver.get(get_base_url(url) + "cart")
-    driver.find_element_by_tag_name('body').send_keys(Keys.COMMAND + 'r')
+    driver.find_element_by_tag_name("body").send_keys(Keys.COMMAND + "r")
     driver.refresh()
     element = driver.find_elements_by_xpath(f"//button")
     if not element:
@@ -190,6 +190,23 @@ def fill_information(driver, soup):
                         for element in elements:
                             try:
                                 element.clear()
+                                time.sleep(1)
+                                element.send_keys(v)
+                                break
+                            except:
+                                continue
+                    except:
+                        pass
+
+        elif i.attrs.get("name") in data:
+            for k, v in data.items():
+                # print(i.attrs.get('name'))
+                if k in i.attrs.get("name").replace("checkout[shipping_address]", ""):
+                    try:
+                        elements = driver.find_elements_by_name(i.attrs.get("name"))
+                        for element in elements:
+                            try:
+                                element.clear()
                                 element.send_keys(v)
                                 break
                             except:
@@ -212,11 +229,11 @@ def click_add_to_cart(driver, urls):
             url = url.strip()
             try:
                 driver.get(url.strip())
-                driver.find_element_by_tag_name('body').send_keys(Keys.COMMAND + 'r')
+                driver.find_element_by_tag_name("body").send_keys(Keys.COMMAND + "r")
                 driver.refresh()
             except Exception as e:
                 writer.writerow({"URL": url, "Status": "Incomplete"})
-                
+
             # driver.execute_script("window.scrollTo(0, 400);")
             soup = bs4.BeautifulSoup(driver.page_source, "lxml")
             cart_obj = AddToCart(url, soup)
@@ -252,9 +269,11 @@ def click_add_to_cart(driver, urls):
                         elif i.get_attribute("id") == _id:
                             click(i)
                             is_clicked = True
-                        elif 'add' in i.get_attribute('name') and 'submit' in i.get_attribute('type'):
+                        elif "add" in i.get_attribute(
+                            "name"
+                        ) and "submit" in i.get_attribute("type"):
                             click(i)
-                        
+
                     except Exception as e:
                         print("Add to cart: ", e)
                         continue
@@ -285,10 +304,10 @@ def click_add_to_cart(driver, urls):
 
 def main():
 
-    urls = get_urls()
-    # urls = [
-    #     "https://www.biotrust.com/products/biotrust-ageless-multi-collagen-protein-powder"
-    # ]
+    # urls = get_urls()
+    urls = [
+        "https://www.beautybakerie.com/products/proof-is-in-the-pudding-eyeshadow-palette"
+    ]
     click_add_to_cart(driver, urls)
 
 
