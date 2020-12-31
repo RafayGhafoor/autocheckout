@@ -1,0 +1,6 @@
+webdriver_manager==3.2.2
+selenium==3.141.0
+lxml==4.6.2
+googlesearch_python==2020.0.2
+requests==2.25.1
+beautifulsoup4==4.9.3
