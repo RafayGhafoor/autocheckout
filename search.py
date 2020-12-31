@@ -50,7 +50,7 @@ def main():
     with open("list.txt", "r") as f:
         links = f.readlines()
         links = [f"http://{i.strip()}" for i in links if len(i) > 5]
-        with open("data.txt", "a") as f:
+        with open("products.txt", "a") as f:
             try:
                 for url in links:
                     content = chrome_search(url)

@@ -14,7 +14,7 @@
 
 ## On every run:
 
-- Run fetch_product_listing.bat to fetch products list from the domains (list.txt file). A data.txt file would be created containing the fetched products.
+- Run fetch_product_listing.bat to fetch products list from the domains (list.txt file). A products.txt file would be created containing the fetched products.
   
 - After you have done these steps, you have to open run.bat to do checkout on the fetched products.
 

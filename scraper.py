@@ -3,21 +3,27 @@ import bs4
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.action_chains import ActionChains
-
+import csv
 from copy import deepcopy
 import time
 import selenium
 from selenium.webdriver.common.keys import Keys
 import os
 from urllib.parse import urlsplit
+from selenium.webdriver.chrome.options import Options
 
-driver = webdriver.Chrome(ChromeDriverManager().install())
+options = Options()
+options.add_experimental_option("excludeSwitches", ["enable-logging"])
+options.add_argument("--disable-logging")
+driver = webdriver.Chrome(
+    ChromeDriverManager().install(), options=options, service_log_path="NUL"
+)
+driver.set_page_load_timeout(10)
 
-if os.path.exists("report.txt"):
-    os.remove("report.txt")
 
 with open("info.json", "r") as f:
     data = json.load(f)
+
 
 def get_base_url(url):
     base_url = "{0.scheme}://{0.netloc}/".format(urlsplit(url))
@@ -29,7 +35,7 @@ def click(element, delay=0.5):
     for i in range(tries):
         try:
             element.click()
-            # break
+            break
         except selenium.common.exceptions.ElementClickInterceptedException:
             webdriver.ActionChains(driver).send_keys(Keys.ESCAPE).perform()
             driver.execute_script("window.scrollTo(0, 400);")
@@ -126,13 +132,23 @@ class AddToCart:
         return "/%s" % "/".join(components)
 
 
-def get_urls(filename="data.txt"):
-    with open("data.txt", "r") as f:
-        return list(set([i.strip().replace('\n','') for i in f.readlines() if i.strip().replace('\n','')]))
+def get_urls(filename="products.txt"):
+    with open(filename, "r") as f:
+        return list(
+            set(
+                [
+                    i.strip().replace("\n", "")
+                    for i in f.readlines()
+                    if i.strip().replace("\n", "")
+                ]
+            )
+        )
 
 
 def click_checkout(driver, url):
     driver.get(get_base_url(url) + "cart")
+    driver.find_element_by_tag_name('body').send_keys(Keys.COMMAND + 'r')
+    driver.refresh()
     element = driver.find_elements_by_xpath(f"//button")
     if not element:
         element = driver.find_elements_by_xpath(f"//input")
@@ -143,7 +159,7 @@ def click_checkout(driver, url):
 
     for i in element:
         try:
-            if i.text.lower() == 'checkout':
+            if i.text.lower() == "checkout":
                 i.click()
             if "checkout" in i.get_attribute(
                 "class"
@@ -183,77 +199,96 @@ def fill_information(driver, soup):
 
 
 def click_add_to_cart(driver, urls):
-    for url in urls:
-        url = url.strip()
-        driver.get(url.strip())
+    if os.path.exists("report.csv"):
+        os.remove("report.csv")
 
-        # driver.execute_script("window.scrollTo(0, 400);")
-        soup = bs4.BeautifulSoup(driver.page_source, "lxml")
-        cart_obj = AddToCart(url, soup)
-        add_to_cart_button = cart_obj.find_add_button()
-        if not add_to_cart_button:
-            print(f"Cart button for {url} not found.")
-            continue
+    with open("report.csv", "a", newline="") as file:
+        fieldnames = ["URL", "Status"]
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writeheader()
 
-        message = f"\n{url}->"
-        status = "incomplete"
-        try:
+        for url in urls:
+            url_status = True
+            url = url.strip()
+            try:
+                driver.get(url.strip())
+                driver.find_element_by_tag_name('body').send_keys(Keys.COMMAND + 'r')
+                driver.refresh()
+            except Exception as e:
+                writer.writerow({"URL": url, "Status": "Incomplete"})
+                
+            # driver.execute_script("window.scrollTo(0, 400);")
+            soup = bs4.BeautifulSoup(driver.page_source, "lxml")
+            cart_obj = AddToCart(url, soup)
+            add_to_cart_button = cart_obj.find_add_button()
+            if not add_to_cart_button:
+                writer.writerow({"URL": url, "Status": "Incomplete"})
+                print(f"Cart button for {url} not found.")
+                url_status = False
+                continue
 
-            webdriver.ActionChains(driver).send_keys(Keys.ESCAPE).perform()
-            _get = lambda x: add_to_cart_button.get(x)
-            _id, _class, _xpath = _get("id"), _get("class"), _get("xpath")
-            element = driver.find_elements_by_xpath(f"//button")
-            if not element:
-                element = driver.find_elements_by_xpath(f"//input")
-            elif element:
-                element.extend(driver.find_elements_by_xpath(f"//input"))
+            message = f"\n{url}->"
+            status = "incomplete"
+            try:
+                webdriver.ActionChains(driver).send_keys(Keys.ESCAPE).perform()
+                _get = lambda x: add_to_cart_button.get(x)
+                _id, _class, _xpath = _get("id"), _get("class"), _get("xpath")
+                element = driver.find_elements_by_xpath(f"//button")
+                if not element:
+                    element = driver.find_elements_by_xpath(f"//input")
+                elif element:
+                    element.extend(driver.find_elements_by_xpath(f"//input"))
 
-            is_clicked = False
+                is_clicked = False
 
-            for i in element:
-                try:
-                    if i.get_attribute("class") == _class or "add" in i.get_attribute(
-                        "class"
-                    ).lower():
-                        click(i)
-                        is_clicked = True
-                    elif i.get_attribute("id") == _id:
-                        click(i)
-                        is_clicked = True
-                except Exception as e:
-                    print("Add to cart: ", e)
-                    continue
+                for i in element:
+                    try:
+                        if (
+                            i.get_attribute("class") == _class
+                            or "add" in i.get_attribute("class").lower()
+                        ):
+                            click(i)
+                            is_clicked = True
+                        elif i.get_attribute("id") == _id:
+                            click(i)
+                            is_clicked = True
+                        elif 'add' in i.get_attribute('name') and 'submit' in i.get_attribute('type'):
+                            click(i)
+                        
+                    except Exception as e:
+                        print("Add to cart: ", e)
+                        continue
 
-            if is_clicked:
-                click_checkout(driver, url)
-                soup = bs4.BeautifulSoup(driver.page_source, "lxml")
-                fill_information(driver, soup)
-                try:
-                    element = driver.find_element_by_id("continue_button")
-                    if not element:
-                        element = driver.find_element_by_id("checkout")
+                if is_clicked:
+                    click_checkout(driver, url)
+                    soup = bs4.BeautifulSoup(driver.page_source, "lxml")
+                    fill_information(driver, soup)
+                    try:
+                        element = driver.find_element_by_id("continue_button")
+                        if not element:
+                            element = driver.find_element_by_id("checkout")
+                        click(element)
 
-                    click(element)
-                    status = "complete"
-                except Exception as e:
-                    print("Add to cart: ", e)
-                    status = "incomplete"
-            else:
-                print("NOT CLICKED")
+                    except Exception as e:
+                        print("Add to cart: ", e)
+                        url_status = False
+                else:
+                    url_status = False
+                    print("NOT CLICKED")
 
-        finally:
-            with open("report.txt", "a") as f:
-                message = f"\n{url}->{status}"
-                print(message)
-                f.write(message)
-
-        # input("Done?")
+            except Exception as e:
+                print(e)
+            finally:
+                write_status = "Complete" if url_status else "Incomplete"
+                writer.writerow({"URL": url, "Status": write_status})
 
 
 def main():
 
-    # urls = get_urls()
-    urls = ['https://beautybio.com/products/bright-eyes-illuminating-colloidal-silver-collagen-eye-patches']
+    urls = get_urls()
+    # urls = [
+    #     "https://www.biotrust.com/products/biotrust-ageless-multi-collagen-protein-powder"
+    # ]
     click_add_to_cart(driver, urls)
 
 

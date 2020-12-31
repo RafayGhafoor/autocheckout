@@ -3,3 +3,4 @@
 ECHO **RUNNING SCRIPT**
 ECHO **FETCHING PRODUCTS LISTING**
 python search.py
+pause
