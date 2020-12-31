@@ -18,3 +18,5 @@
   
 - After you have done these steps, you have to open run.bat to do checkout on the fetched products.
 
+- report.csv contains the progress report for the products checkout listing.
+
