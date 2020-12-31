@@ -39,7 +39,7 @@ def chrome_search(url):
     try:
         content = [i.get("href") for i in search_content.findAll("a") if i.get("href")]
         for i in content:
-            if "-" in i and "blog" not in i:
+            if "-" in i and "blog" not in i and "search" not in i:
                 return i
     except:
         return ""
